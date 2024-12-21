@@ -1,14 +1,9 @@
-name: releaseALibGdxGameToNativeExecutable
-author: "sevi2000"
+name: 'releaseALibGdxGameToNativeExecutable'
+author: 'sevi2000'
 description: 'Create a launcher for any jar app.'
 branding:
   icon: 'play'
   color: 'orange'
-
-on:
-  pull_request:
-    branches: [master]
-    types: [closed]
 
 inputs:
   project-name:
@@ -42,52 +37,50 @@ inputs:
     required: false
     default: 'temurin'
 
-jobs:
-  release_job:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Java setup
-        uses: actions/setup-java@v3
-        with:
-          distribution: ${{ inputs.JAVA_DISTRIBUTION }}
-          java-version: ${{ inputs.JAVA_VERSION }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Java setup
+      uses: actions/setup-java@v3
+      with:
+        distribution: ${{ inputs.JAVA_DISTRIBUTION }}
+        java-version: ${{ inputs.JAVA_VERSION }}
 
-      - name: download scripts
-        uses: HydrolienF/usual@0.3.38
-        with:
-          args: 'download https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{ inputs.launcher-jar-version }}.zip temp.zip'
-  
-      - name: unzip scripts files
-        uses: HydrolienF/usual@0.3.38
-        with:
-          args: 'unzip temp.zip $HOME/work/${{ inputs.project-name }}/${{ inputs.project-name }}/'
+    - name: Download scripts
+      uses: HydrolienF/usual@0.3.38
+      with:
+        args: 'download https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{ inputs.launcher-jar-version }}.zip temp.zip'
 
-      - name: create launcher as .jar
-        shell: bash
-        run: |
-          rm -f *.{jar,deb}
-          chmod +x ./pack_app_to_deb.sh
-          ./pack_app_to_deb.sh
+    - name: Unzip scripts files
+      uses: HydrolienF/usual@0.3.38
+      with:
+        args: 'unzip temp.zip $HOME/work/${{ inputs.project-name }}/${{ inputs.project-name }}/'
 
-      - name: release
-        shell: bash
-        run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases \
-            -d '{
-              "tag_name": "v${{ inputs.app-version }}",
-              "target_commitish": "${{ github.ref }}",
-              "name": "Release v${{ inputs.app-version }}",
-              "body": "This is the release description",
-              "draft": false,
-              "prerelease": false
-            }'
+    - name: Create launcher as .jar
+      shell: bash
+      run: |
+        rm -f *.{jar,deb}
+        chmod +x ./pack_app_to_deb.sh
+        ./pack_app_to_deb.sh
 
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary @${{ inputs.project-name }}.deb \
-            https://uploads.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases/v${{ inputs.app-version }}/assets?name=${{ inputs.project-name }}.deb
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ inputs.app-version }}
+        release_name: Release v${{ inputs.app-version }}
+        body: 'This is the release description'
+        draft: false
+        prerelease: false
 
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ inputs.project-name }}.deb
+        asset_name: ${{ inputs.project-name }}.deb
+        asset_content_type: application/octet-stream
