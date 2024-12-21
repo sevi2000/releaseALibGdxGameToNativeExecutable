@@ -46,7 +46,7 @@ inputs:
 
 
 runs:
-  using: "ubuntu-latest"
+  using: "composite"
   steps:
 
   - uses: actions/setup-java@v3
