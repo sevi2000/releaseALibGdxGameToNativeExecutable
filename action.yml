@@ -1,0 +1,95 @@
+name: releaseALibGdxGameToNativeExecutable
+author: "sevi2000"
+description: 'Create a launcher for any jar app.'
+branding:
+  icon: 'play'
+  color: 'orange'
+
+on:
+  pull_request:
+    branches: [master]
+    types: [closed]
+
+
+inputs:
+  project-name:  # id of input
+    description: 'Name of your projet'
+    required: true
+  user-name:
+    description: 'Name of the github user account'
+    required: true
+  launcher-jar-version:
+    description: 'Version of launcher jar'
+    required: true
+  GITHUB_TOKEN:
+    description: 'dollar{{ github.token }} from your action so that this action can add artifacts'
+    required: true
+  release-url:
+    description: 'dollar{{ steps.create_release.outputs.upload_url }} from your action so that this action can add artifacts'
+    required: true
+  app-version:
+    description: 'Version of the app & of the launcher'
+    required: true
+     # default : ''
+  JRE_VERSION: 
+    description: 'JRE version to use'
+    required: false
+    default: '21.0.1'
+  JAVA_VERSION:
+    description: 'Java version to use'
+    required: false
+    default: '21'
+  JAVA_DISTRIBUTION:
+    description: 'Java distribution to use'
+    required: false
+    default: 'temurin'
+
+
+runs:
+  using: "ubuntu-latest"
+  steps:
+
+  - uses: actions/setup-java@v3
+    with:
+      distribution: ${{ inputs.JAVA_DISTRIBUTION }}
+      java-version: ${{ inputs.JAVA_VERSION }}
+
+
+  - name: download scripts
+    uses: HydrolienF/usual@0.3.38
+    with:
+      args: 'download https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{ inputs.launcher-jar-version }}.zip temp.zip'
+  
+  # args is probably choose before steps start, so we can't use result of it.
+  - name: unzip scripts files
+    uses: HydrolienF/usual@0.3.38
+    with:
+      args: 'unzip temp.zip $HOME/work/${{ inputs.project-name }}/${{ inputs.project-name }}/'
+
+  - name: create launcher as .jar
+    shell: bash
+    run: |
+      rm -f *.{jar,deb}
+      chmod +x ./pack_app_to_deb.sh
+      ./pack_app_to_deb.sh
+    
+  - name: release
+    run: |
+        curl -X POST \
+          -H "Authorization: Bearer ${{ inputs.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases \
+          -d '{
+            "tag_name": "v1.0.0",
+            "target_commitish": "main",
+            "name": "Release v1.0.0",
+            "body": "This is the release description",
+            "draft": false,
+            "prerelease": false
+          }'
+
+          curl -X POST \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -H "Content-Type: application/octet-stream" \
+          --data-binary @path/to/your-package.deb \
+          https://uploads.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases/v1.0.0/assets?name=${{ inputs.project-name }}.deb
