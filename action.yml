@@ -74,6 +74,7 @@ runs:
       ./pack_app_to_deb.sh
     
   - name: release
+    shell: bash
     run: |
         curl -X POST \
           -H "Authorization: Bearer ${{ inputs.GITHUB_TOKEN }}" \
