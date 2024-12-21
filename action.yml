@@ -45,52 +45,53 @@ inputs:
     default: 'temurin'
 
 
-runs:
-  using: "composite"
-  steps:
+jobs:
+  release_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Java setup
+        uses: actions/setup-java@v3
+          with:
+            distribution: ${{ inputs.JAVA_DISTRIBUTION }}
+            java-version: ${{ inputs.JAVA_VERSION }}
 
-  - uses: actions/setup-java@v3
-    with:
-      distribution: ${{ inputs.JAVA_DISTRIBUTION }}
-      java-version: ${{ inputs.JAVA_VERSION }}
 
-
-  - name: download scripts
-    uses: HydrolienF/usual@0.3.38
-    with:
-      args: 'download https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{ inputs.launcher-jar-version }}.zip temp.zip'
+      - name: download scripts
+        uses: HydrolienF/usual@0.3.38
+          with:
+            args: 'download https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{ inputs.launcher-jar-version }}.zip temp.zip'
   
   # args is probably choose before steps start, so we can't use result of it.
-  - name: unzip scripts files
-    uses: HydrolienF/usual@0.3.38
-    with:
-      args: 'unzip temp.zip $HOME/work/${{ inputs.project-name }}/${{ inputs.project-name }}/'
+      - name: unzip scripts files
+        uses: HydrolienF/usual@0.3.38
+          with:
+            args: 'unzip temp.zip $HOME/work/${{ inputs.project-name }}/${{ inputs.project-name }}/'
 
-  - name: create launcher as .jar
-    shell: bash
-    run: |
-      rm -f *.{jar,deb}
-      chmod +x ./pack_app_to_deb.sh
-      ./pack_app_to_deb.sh
+      - name: create launcher as .jar
+        shell: bash
+        run: |
+          rm -f *.{jar,deb}
+          chmod +x ./pack_app_to_deb.sh
+          ./pack_app_to_deb.sh
     
-  - name: release
-    shell: bash
-    run: |
-        curl -X POST \
-          -H "Authorization: Bearer ${{ inputs.GITHUB_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases \
-          -d '{
-            "tag_name": "v1.0.0",
-            "target_commitish": "main",
-            "name": "Release v1.0.0",
-            "body": "This is the release description",
-            "draft": false,
-            "prerelease": false
-          }'
+      - name: release
+        shell: bash
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ inputs.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases \
+            -d '{
+              "tag_name": "v1.0.0",
+              "target_commitish": "main",
+              "name": "Release v1.0.0",
+              "body": "This is the release description",
+              "draft": false,
+              "prerelease": false
+            }'
 
           curl -X POST \
-          -H "Authorization: Bearer $GITHUB_TOKEN" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @path/to/your-package.deb \
-          https://uploads.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases/v1.0.0/assets?name=${{ inputs.project-name }}.deb
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @${{ inputs.project-name }}.deb \
+            https://uploads.github.com/repos/${{ inputs.user-name }}/${{ inputs.project-name }}/releases/v1.0.0/assets?name=${{ inputs.project-name }}.deb
