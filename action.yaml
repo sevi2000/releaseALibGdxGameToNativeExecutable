@@ -7,7 +7,10 @@ on:
   pull_request:
     branches:
       - main
-
+inputs:
+  version:
+    description: 'version of the action to use'
+    required: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,7 +21,7 @@ jobs:
 
       - name: Download sources from release
         run: |
-          curl -L -o sources.zip "https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/1.0.8.zip"
+          curl -L -o sources.zip "https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{ inputs.version }}.zip"
           unzip sources.zip -d repo
           cd repo
 
