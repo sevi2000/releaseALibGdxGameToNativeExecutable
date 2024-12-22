@@ -18,7 +18,7 @@ jobs:
 
       - name: Download sources from release
         run: |
-          curl -L -o sources.zip "https://github.com/${{ github.repository }}/releases/latest/download/sources.zip"
+          curl -L -o sources.zip "https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/releases/latest/download/sources.zip"
           unzip sources.zip -d repo
           cd repo
 
