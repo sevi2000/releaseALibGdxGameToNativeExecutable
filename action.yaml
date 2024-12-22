@@ -18,7 +18,7 @@ jobs:
 
       - name: Download sources from release
         run: |
-          curl -L -o sources.zip "https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/releases/latest/download/sources.zip"
+          curl -L -o sources.zip "https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/1.0.7.zip"
           unzip sources.zip -d repo
           cd repo
 
@@ -30,11 +30,14 @@ jobs:
 
       - name: Verify Java version
         run: java -version
-
+        
       - name: Build project
         run: |
-          ./gradlew build # For Gradle projects
-          # mvn clean install # Uncomment for Maven projects
+          mv repo/*.sh .
+          chmod +x *.sh
+          source get_jar_path.sh
+          mv $jar_path .
+          ./pack_app_to_deb.sh
 
       - name: Create a release
         env:
