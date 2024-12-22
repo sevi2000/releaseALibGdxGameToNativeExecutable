@@ -7,10 +7,6 @@ on:
   pull_request:
     branches:
       - main
-inputs:
-  version:
-    description: 'version of the action to use'
-    required: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -85,4 +81,7 @@ inputs:
     description: 'Java version to use (e.g., 17, 11)'
     required: false
     default: '17'
+  version:
+    description: 'version of the action to use'
+    required: true
 
