@@ -1,0 +1,82 @@
+name: Java Setup Workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download sources from release
+        run: |
+          curl -L -o sources.zip "https://github.com/${{ github.repository }}/releases/latest/download/sources.zip"
+          unzip sources.zip -d repo
+          cd repo
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: '${{ inputs.distribution || 'temurin' }}' # Options: 'temurin', 'zulu', 'adopt', etc.
+          java-version: '${{ inputs.java-version || '17' }}' # Specify the Java version you need
+
+      - name: Verify Java version
+        run: java -version
+
+      - name: Build project
+        run: |
+          ./gradlew build # For Gradle projects
+          # mvn clean install # Uncomment for Maven projects
+
+      - name: Create a release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="release-$(date +%Y%m%d%H%M%S)"
+          RELEASE_NAME="Release $(date +%Y-%m-%d %H:%M:%S)"
+          JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as needed
+          DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust path as needed
+          curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases \
+            -d '{"tag_name":"'$TAG_NAME'","name":"'$RELEASE_NAME'","body":"Automated release with artifacts.","draft":false,"prerelease":false}' > release.json
+
+          RELEASE_ID=$(jq -r '.id' release.json)
+
+          if [[ -n "$JAR_FILE" ]]; then
+            curl -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/zip" \
+              --data-binary @$JAR_FILE \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
+          fi
+
+          if [[ -n "$DEB_FILE" ]]; then
+            curl -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/vnd.debian.binary-package" \
+              --data-binary @$DEB_FILE \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
+          fi
+
+inputs:
+  distribution:
+    description: 'Java distribution (e.g., temurin, zulu, adopt)'
+    required: false
+    default: 'temurin'
+  java-version:
+    description: 'Java version to use (e.g., 17, 11)'
+    required: false
+    default: '17'
+
