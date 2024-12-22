@@ -16,9 +16,6 @@ inputs:
     description: 'Java version to use (e.g., 17, 11)'
     required: false
     default: '17'
-  version:
-    description: 'version of the action to use'
-    required: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,13 +23,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Download sources from release
-        run: |
-          curl -L -o sources.zip "https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{ inputs.version }}.zip"
-          unzip sources.zip -d repo
-          cd repo
-
+        
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -44,10 +35,9 @@ jobs:
         
       - name: Build project
         run: |
-          mv repo/*.sh .
-          chmod +x *.sh
-          source get_jar_path.sh
-          mv $jar_path .
+          chmod +x ${{ github.action_path }}/*.sh
+          mv  ${{ github.action_path }}/*.sh .
+          source ./get_jar_path.sh
           ./pack_app_to_deb.sh
 
       - name: Create a release
