@@ -7,6 +7,18 @@ on:
   pull_request:
     branches:
       - main
+inputs:
+  distribution:
+    description: 'Java distribution (e.g., temurin, zulu, adopt)'
+    required: false
+    default: 'temurin'
+  java-version:
+    description: 'Java version to use (e.g., 17, 11)'
+    required: false
+    default: '17'
+  version:
+    description: 'version of the action to use'
+    required: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -71,17 +83,3 @@ jobs:
               --data-binary @$DEB_FILE \
               "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
           fi
-
-inputs:
-  distribution:
-    description: 'Java distribution (e.g., temurin, zulu, adopt)'
-    required: false
-    default: 'temurin'
-  java-version:
-    description: 'Java version to use (e.g., 17, 11)'
-    required: false
-    default: '17'
-  version:
-    description: 'version of the action to use'
-    required: true
-
