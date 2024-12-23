@@ -75,15 +75,16 @@ runs:
           -d '{"tag_name":"'$TAG_NAME'","name":"'$RELEASE_NAME'","body":"Automated release with artifacts.","draft":false,"prerelease":false}' > release.json
 
         RELEASE_ID=$(jq -r '.id' release.json)
-    - name: Upload JAR artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: $JAR_FILE
-          path: $JAR_FILE
+        # Upload JAR file
+        curl -X POST \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @$JAR_FILE \
+        "https://uploads.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
 
-      # Step 4: Upload .deb file
-    - name: Upload DEB artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: $JAR_FILE
-          path: $JAR_FILE
+        # Upload DEB file
+        curl -X POST \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @$DEB_FILE \
+        "https://uploads.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
