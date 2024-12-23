@@ -61,8 +61,10 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.caller-github-token }}
       run: |
-        TAG_NAME="release-$(date +%Y%m%d%H%M%S)"
-        RELEASE_NAME="Release $(date "+%Y-%m-%d %H:%M:%S")"
+        TAG_NAME="release-$(date +%Y-%m-%d_%H:%M:%S)"
+        git tag $TAG_NAME
+        git push origin $TAG_NAME
+        RELEASE_NAME="Release $TAG_NAME"
         JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as needed
         DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust path as needed
         curl -X POST \
