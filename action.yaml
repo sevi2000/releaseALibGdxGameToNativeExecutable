@@ -55,36 +55,24 @@ runs:
         ./pack_app_to_deb.sh
         echo "after trying to generate deb-----"
         ls
-
-    - name: Create a release
+    - name: Set Release Info
       shell: bash
+      run: |
+        echo "TAG_NAME=release-$(date +%Y-%m-%d_%H.%M.%S)" >> $GITHUB_ENV
+        echo "RELEASE_NAME=release-$(date +%Y-%m-%d_%H.%M.%S)" >> $GITHUB_ENV
+    - name: Create Release
       env:
         GITHUB_TOKEN: ${{ inputs.caller-github-token }}
         GITHUB_REPO: ${{ github.repository }}
-      run: |
-        TAG_NAME="release-$(date +%Y-%m-%d_%H.%M.%S)"
-        git tag $TAG_NAME
-        git push origin $TAG_NAME
-        RELEASE_NAME="Release $TAG_NAME"
-        JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as needed
-        DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust path as needed
-        curl -X POST \
-          -H "Authorization: Bearer $GITHUB_TOKEN" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/$GITHUB_REPO/releases \
-          -d '{"tag_name":"'$TAG_NAME'","name":"'$RELEASE_NAME'","body":"Automated release with artifacts.","draft":false,"prerelease":false}' > release.json
-
-        RELEASE_ID=$(jq -r '.id' release.json)
-        # Upload JAR file
-        curl -X POST \
-        -H "Authorization: Bearer $GITHUB_TOKEN" \
-        -H "Content-Type: application/octet-stream" \
-        --data-binary @$JAR_FILE \
-        "https://uploads.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
-
-        # Upload DEB file
-        curl -X POST \
-        -H "Authorization: Bearer $GITHUB_TOKEN" \
-        -H "Content-Type: application/octet-stream" \
-        --data-binary @$DEB_FILE \
-        "https://uploads.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
+        JAR_FILE: ./*.jar
+        DEB_FILE: ./*.deb
+      uses: softprops/action-gh-release@v1
+      with:
+        token: ${{ inputs.caller-github-token }}
+        tag_name: ${{ env.TAG_NAME }}
+        name: ${{ env.RELEASE_NAME }}
+        files: |
+          ${{ env.JAR_FILE }}
+          ${{ env.DEB_FILE }}
+        draft: false
+        prerelease: false
