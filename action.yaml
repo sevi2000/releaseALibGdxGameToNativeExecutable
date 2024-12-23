@@ -60,6 +60,8 @@ runs:
       run: |
         echo "TAG_NAME=release-$(date +%Y-%m-%d_%H.%M.%S)" >> $GITHUB_ENV
         echo "RELEASE_NAME=release-$(date +%Y-%m-%d_%H.%M.%S)" >> $GITHUB_ENV
+        echo "JAR_FILE=$(find . -name '*.jar' | head -n 1)" >> $GITHUB_ENV
+        echo "DEB_FILE=$(find . -name '*.deb' | head -n 1)"  >> $GITHUB_ENV
     - name: Create Release
       env:
         GITHUB_TOKEN: ${{ inputs.caller-github-token }}
