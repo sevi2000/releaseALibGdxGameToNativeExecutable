@@ -13,6 +13,7 @@ mkdir -p $build_dir/resources/icons
 version=$(cat gradle.properties | grep -i 'version' | cut -d '=' -f 2 | tr -d ' ')
 main_class=$(sed -En "s/^mainClassName = '(.*)'$/\1/p" lwjgl3/build.gradle)
 cp $jar_path $build_dir/
+cp $jar_path ./
 cp icon.png $build_dir/resources/icons/
 cat <<EOF > $build_dir/resources/$app_name.sh
 #!/bin/bash
