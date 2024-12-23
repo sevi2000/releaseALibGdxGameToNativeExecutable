@@ -1,12 +1,5 @@
 name: Java Setup Workflow
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+description: 'Setup Java environment and build a project'
 
 inputs:
   distribution:
@@ -21,73 +14,76 @@ inputs:
     description: 'Version of the action'
     required: true
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: ${{ inputs.distribution }}
+        java-version: ${{ inputs.java-version }}
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: ${{ inputs.distribution }}
-          java-version: ${{ inputs.java-version }}
+    - name: Verify Java version
+      shell: bash
+      run: java -version
 
-      - name: Verify Java version
-        run: java -version
+    - name: Download release ZIP assets
+      shell: bash
+      run: |
+        wget https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{inputs.version}}.zip -O code-to-exec.zip
+        echo "after downloading sources
+        ls
+        echo "end of ls----------------"
+    - name: Extract ZIP asset
+      shell: bash
+      run: |
+        echo "uzniping sources-----------------"
+        unzip -d code-to-exec code-to-exec.zip
+        
+    - name: Build project
+      shell: bash
+      run: |
+        echo "bringing scripts-----------------"
+        mv code-to-exec/*/*.sh .
+        chmod +x *.sh
+        ./pack_app_to_deb.sh
+        echo "after trying to generate deb-----"
+        ls
 
-      - name: Download release ZIP assets
-        run: |
-          wget https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{inputs.version}}.zip -O code-to-exec.zip
-          echo "after downloading sources
-          ls
-          echo "end of ls----------------"
-      - name: Extract ZIP asset
-        run: |
-          echo "uzniping sources-----------------"
-          unzip -d code-to-exec code-to-exec.zip
-         
-      - name: Build project
-        run: |
-           echo "bringing scripts-----------------"
-          mv code-to-exec/*/*.sh .
-          chmod +x *.sh
-          ./pack_app_to_deb.sh
-          echo "after trying to generate deb-----"
-          ls
+    - name: Create a release
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG_NAME="release-$(date +%Y%m%d%H%M%S)"
+        RELEASE_NAME="Release $(date +%Y-%m-%d %H:%M:%S)"
+        JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as needed
+        DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust path as needed
+        curl -X POST \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/releases \
+          -d '{"tag_name":"'$TAG_NAME'","name":"'$RELEASE_NAME'","body":"Automated release with artifacts.","draft":false,"prerelease":false}' > release.json
 
-      - name: Create a release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG_NAME="release-$(date +%Y%m%d%H%M%S)"
-          RELEASE_NAME="Release $(date +%Y-%m-%d %H:%M:%S)"
-          JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as needed
-          DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust path as needed
+        RELEASE_ID=$(jq -r '.id' release.json)
+
+        if [[ -n "$JAR_FILE" ]]; then
           curl -X POST \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/releases \
-            -d '{"tag_name":"'$TAG_NAME'","name":"'$RELEASE_NAME'","body":"Automated release with artifacts.","draft":false,"prerelease":false}' > release.json
+            -H "Content-Type: application/zip" \
+            --data-binary @$JAR_FILE \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
+        fi
 
-          RELEASE_ID=$(jq -r '.id' release.json)
-
-          if [[ -n "$JAR_FILE" ]]; then
-            curl -X POST \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Accept: application/vnd.github.v3+json" \
-              -H "Content-Type: application/zip" \
-              --data-binary @$JAR_FILE \
-              "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
-          fi
-
-          if [[ -n "$DEB_FILE" ]]; then
-            curl -X POST \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \
-              -H "Accept: application/vnd.github.v3+json" \
-              -H "Content-Type: application/vnd.debian.binary-package" \
-              --data-binary @$DEB_FILE \
-              "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
-          fi
+        if [[ -n "$DEB_FILE" ]]; then
+          curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/vnd.debian.binary-package" \
+            --data-binary @$DEB_FILE \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
+        fi
