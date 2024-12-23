@@ -37,7 +37,7 @@ runs:
       shell: bash
       run: |
         wget https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{inputs.version}}.zip -O code-to-exec.zip
-        echo "after downloading sources
+        echo "after downloading sources"
         ls
         echo "end of ls----------------"
     - name: Extract ZIP asset
