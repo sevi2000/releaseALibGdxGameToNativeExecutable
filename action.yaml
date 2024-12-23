@@ -62,7 +62,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.caller-github-token }}
       run: |
         TAG_NAME="release-$(date +%Y%m%d%H%M%S)"
-        RELEASE_NAME="Release $(date +%Y-%m-%d %H:%M:%S)"
+        RELEASE_NAME="Release $(date "+%Y-%m-%d %H:%M:%S")"
         JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as needed
         DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust path as needed
         curl -X POST \
