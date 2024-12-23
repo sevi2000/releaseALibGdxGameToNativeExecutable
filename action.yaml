@@ -1,80 +1,113 @@
 name: Java Setup Workflow
 
-on: push:
+on:
+  push:
     branches:
-      - main pull_request:
+      - main
+  pull_request:
     branches:
-      - main <<<<<<< HEAD =======
+      - main
 
->>>>>>> 8319219 (Yet another try)
-inputs: distribution:
-    description: 'Java distribution (e.g., temurin, zulu, adopt)' 
-    required: false default: 'temurin'
-  java-version: description: 'Java version to use (e.g., 17, 11)' 
-    required: false default: '17'
-  version: <<<<<<< HEAD
-    description: 'Version of the acton' required: true
-======= description: 'Version of the action' required: true
+inputs:
+  distribution:
+    description: 'Java distribution (e.g., temurin, zulu, adopt)'
+    required: false
+    default: 'temurin'
+  java-version:
+    description: 'Java version to use (e.g., 17, 11)'
+    required: false
+    default: '17'
+  version:
+    description: 'Version of the action'
+    required: true
 
->>>>>>> 8319219 (Yet another try)
-jobs: build:
+jobs:
+  build:
     runs-on: ubuntu-latest
 
-    steps: - name: Checkout code
+    steps:
+      - name: Checkout code
         uses: actions/checkout@v3
-<<<<<<< HEAD
-        
-=======
 
->>>>>>> 8319219 (Yet another try)
-      - name: Set up JDK uses: actions/setup-java@v3 with:
-          distribution: ${{ inputs.distribution }} java-version: ${{ 
-          inputs.java-version }}
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: ${{ inputs.distribution }}
+          java-version: ${{ inputs.java-version }}
 
-      - name: Verify Java version run: java -version
-        
-      - name: Build project run: |
-          chmod +x ${{ github.action_path }}/*.sh
-<<<<<<< HEAD mv ${{ github.action_path }}/*.sh .
-=======
-          mv ${{ github.action_path }}/*.sh .
->>>>>>> 8319219 (Yet another try)
-          source ./get_jar_path.sh ./pack_app_to_deb.sh
+      - name: Verify Java version
+        run: java -version
 
-      - name: Create a release env:
+      - name: Download release ZIP asset
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: | TAG_NAME="release-$(date +%Y%m%d%H%M%S)" 
-          RELEASE_NAME="Release $(date +%Y-%m-%d %H:%M:%S)" 
-          JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as 
-          needed DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust 
-          path as needed curl -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \ -H "Accept: 
-            application/vnd.github.v3+json" \ 
-            https://api.github.com/repos/${{ github.repository 
-            }}/releases \ -d 
-            '{"tag_name":"'$TAG_NAME'","name":"'$RELEASE_NAME'","body":"Automated 
-            release with artifacts.","draft":false,"prerelease":false}' > 
-            release.json
+        run: |
+          TAG_NAME="v${{ inputs.version }}"
+          RELEASE_ID=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME \
+            | jq -r '.id')
+
+          ASSETS=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets)
+
+          for row in $(echo "${ASSETS}" | jq -r '.[] | @base64'); do
+            _jq() {
+             echo ${row} | base64 --decode | jq -r ${1}
+            }
+            ASSET_URL=$(_jq '.url')
+            ASSET_NAME=$(_jq '.name')
+            if [[ $ASSET_NAME == *.zip ]]; then
+              curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
+                -H "Accept: application/octet-stream" \
+                -o $ASSET_NAME $ASSET_URL
+            fi
+          done
+
+      - name: Extract ZIP asset
+        run: |
+          for file in *.zip; do
+            unzip $file -d extracted
+          done
+
+      - name: Build project
+        run: |
+          chmod +x extracted/*.sh
+          source extracted/get_jar_path.sh
+          extracted/pack_app_to_deb.sh
+
+      - name: Create a release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="release-$(date +%Y%m%d%H%M%S)"
+          RELEASE_NAME="Release $(date +%Y-%m-%d %H:%M:%S)"
+          JAR_FILE=$(find . -name '*.jar' | head -n 1) # Adjust path as needed
+          DEB_FILE=$(find . -name '*.deb' | head -n 1) # Adjust path as needed
+          curl -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/releases \
+            -d '{"tag_name":"'$TAG_NAME'","name":"'$RELEASE_NAME'","body":"Automated release with artifacts.","draft":false,"prerelease":false}' > release.json
 
           RELEASE_ID=$(jq -r '.id' release.json)
 
-          if [[ -n "$JAR_FILE" ]]; then curl -X POST \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \ -H "Accept: 
-              application/vnd.github.v3+json" \ -H "Content-Type: 
-              application/zip" \ --data-binary @$JAR_FILE \ 
-              "https://uploads.github.com/repos/${{ github.repository 
-              }}/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
+          if [[ -n "$JAR_FILE" ]]; then
+            curl -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/zip" \
+              --data-binary @$JAR_FILE \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
           fi
 
-          if [[ -n "$DEB_FILE" ]]; then curl -X POST \
-              -H "Authorization: Bearer $GITHUB_TOKEN" \ -H "Accept: 
-              application/vnd.github.v3+json" \ -H "Content-Type: 
-              application/vnd.debian.binary-package" \ --data-binary 
-              @$DEB_FILE \ "https://uploads.github.com/repos/${{ 
-              github.repository 
-              }}/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
-          fi <<<<<<< HEAD =======
-
->>>>>>> 8319219 (Yet another try)
-:q
+          if [[ -n "$DEB_FILE" ]]; then
+            curl -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Content-Type: application/vnd.debian.binary-package" \
+              --data-binary @$DEB_FILE \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $DEB_FILE)"
+          fi
 
