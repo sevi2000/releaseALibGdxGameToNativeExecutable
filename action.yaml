@@ -38,44 +38,25 @@ jobs:
       - name: Verify Java version
         run: java -version
 
-      - name: Download release ZIP asset
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download release ZIP assets
         run: |
-          TAG_NAME="v${{ inputs.version }}"
-          RELEASE_ID=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME \
-            | jq -r '.id')
-
-          ASSETS=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets)
-
-          for row in $(echo "${ASSETS}" | jq -r '.[] | @base64'); do
-            _jq() {
-             echo ${row} | base64 --decode | jq -r ${1}
-            }
-            ASSET_URL=$(_jq '.url')
-            ASSET_NAME=$(_jq '.name')
-            if [[ $ASSET_NAME == *.zip ]]; then
-              curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
-                -H "Accept: application/octet-stream" \
-                -o $ASSET_NAME $ASSET_URL
-            fi
-          done
-
+          wget https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{inputs.version}}.zip -O code-to-exec.zip
+          echo "after downloading sources
+          ls
+          echo "end of ls----------------"
       - name: Extract ZIP asset
         run: |
-          for file in *.zip; do
-            unzip $file -d extracted
-          done
-
+          echo "uzniping sources-----------------"
+          unzip -d code-to-exec code-to-exec.zip
+         
       - name: Build project
         run: |
-          chmod +x extracted/*.sh
-          source extracted/get_jar_path.sh
-          extracted/pack_app_to_deb.sh
+           echo "bringing scripts-----------------"
+          mv code-to-exec/*/*.sh .
+          chmod +x *.sh
+          ./pack_app_to_deb.sh
+          echo "after trying to generate deb-----"
+          ls
 
       - name: Create a release
         env:
