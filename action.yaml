@@ -60,6 +60,7 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.caller-github-token }}
+        GITHUB_REPO: ${{ github.repository }}
       run: |
         TAG_NAME="release-$(date +%Y-%m-%d_%H.%M.%S)"
         git tag $TAG_NAME
@@ -81,7 +82,7 @@ runs:
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/zip" \
             --data-binary @$JAR_FILE \
-            "https://uploads.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
+            "https://uploads.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID/assets?name=$(basename $JAR_FILE)"
         fi
 
         if [[ -n "$DEB_FILE" ]]; then
