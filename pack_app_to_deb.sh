@@ -31,7 +31,8 @@ jpackage \
   --input $build_dir \
   --main-jar ./$jar_name \
   --resource-dir $build_dir/resources \
-  --icon $build_dir/resources/icons/icon.png \
+  --icon $build_dir/resources/icons/icon.png 
+
 echo "Packing app to rpm"
 jpackage \
     --type rpm \
