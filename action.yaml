@@ -31,7 +31,12 @@ runs:
 
     - name: Verify Java version
       shell: bash
-      run: java -version
+      run: |
+        java -version
+        echo "Action path : ${{ github.action_path }}"
+        echo "Action path content"
+        ls ${{ github.action_path }}
+        echo "End of action path content"
 
     - name: Download release ZIP assets
       shell: bash
