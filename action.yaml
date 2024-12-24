@@ -1,5 +1,5 @@
-name: Java Setup Workflow
-description: 'Setup Java environment and build a project'
+name: Libgdx game to native executable action
+description: 'Setup Java environment and build a project to native executable'
 
 inputs:
   distribution:
