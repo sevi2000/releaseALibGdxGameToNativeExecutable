@@ -63,6 +63,7 @@ runs:
         echo "RELEASE_NAME=release-$(date +%Y-%m-%d_%H.%M.%S)" >> $GITHUB_OUTPUT
         echo "JAR_FILE=$(find . -name '*.jar' | head -n 1)" >> $GITHUB_OUTPUT
         echo "DEB_FILE=$(find . -name '*.deb' | head -n 1)"  >> $GITHUB_OUTPUT
+        echo "RPM_FILE=$(find . -name '*.rpm' | head -n 1)"  >> $GITHUB_OUTPUT
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -72,5 +73,6 @@ runs:
         files: |
           ${{ steps.set_release_info.outputs.JAR_FILE }}
           ${{ steps.set_release_info.outputs.DEB_FILE }}
+          ${{ steps.set_release_info.outputs.RPM_FILE }}
         draft: false
         prerelease: false

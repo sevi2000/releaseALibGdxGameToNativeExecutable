@@ -32,3 +32,13 @@ jpackage \
   --main-jar ./$jar_name \
   --resource-dir $build_dir/resources \
   --icon $build_dir/resources/icons/icon.png \
+echo "Packing app to rpm"
+jpackage \
+    --type rpm \
+    --name $app_name \
+    --app-version 1.0 \
+    --input $build_dir \
+    --main-jar ./$jar_name \
+    --dest . \
+    --icon $build_dir/resources/icons/icon.png \
+    --description "My awesome Java application"
