@@ -9,15 +9,22 @@ app_name=$(echo "$jar_name" | cut -d '.' -f 1)
 echo "Creating build directory"
 build_dir="${app_name}"
 rm -rf $build_dir
-mkdir -p $build_dir/resources/icons
+mkdir -pv $build_dir/resources/icons
+echo "Retrieveing app version and main class"
 version=$(cat gradle.properties | grep -i 'version' | cut -d '=' -f 2 | tr -d ' ')
 main_class=$(sed -En "s/^mainClassName = '(.*)'$/\1/p" lwjgl3/build.gradle)
-cp $jar_path $build_dir/
-cp icon.png $build_dir/resources/icons/
+echo "Copying jar to current directory"
+cp -v $jar_path .
+echo "Copying jar and icon to build directory"
+cp -v $jar_path $build_dir/
+echo "Ciopying icon to build directory"
+cp -v icon.png $build_dir/resources/icons/
+echo "Creating script to run app"
 cat <<EOF > $build_dir/resources/$app_name.sh
 #!/bin/bash
 java -jar $jar_name
 EOF
+echo "Packaging app to deb"
 jpackage \
   --type deb \
   --name $app_name \
