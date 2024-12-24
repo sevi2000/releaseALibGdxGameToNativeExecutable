@@ -10,9 +10,6 @@ inputs:
     description: 'Java version to use (e.g., 17, 11)'
     required: false
     default: '17'
-  version:
-    description: 'Version of the action'
-    required: true
   caller-github-token:
     description: 'GitHub token'
     required: true
@@ -33,31 +30,14 @@ runs:
       shell: bash
       run: |
         java -version
-        echo "Action path : ${{ github.action_path }}"
-        echo "Action path content"
-        ls ${{ github.action_path }}
-        echo "End of action path content"
 
-    - name: Download release ZIP assets
-      shell: bash
-      run: |
-        wget https://github.com/sevi2000/releaseALibGdxGameToNativeExecutable/archive/refs/tags/${{inputs.version}}.zip -O code-to-exec.zip
-        echo "after downloading sources"
-        ls
-        echo "end of ls----------------"
-    - name: Extract ZIP asset
-      shell: bash
-      run: |
-        echo "uzniping sources-----------------"
-        unzip -d code-to-exec code-to-exec.zip
-        
     - name: Build project
       shell: bash
       run: |
         echo "bringing scripts-----------------"
-        mv code-to-exec/*/*.sh .
+        mv ${{ github.action_path }}/*.sh .
         chmod +x *.sh
-        ./pack_app_to_deb.sh
+        ./pack_app_for_linux.sh
         echo "after trying to generate deb-----"
         ls
     - name: Set Release Info
