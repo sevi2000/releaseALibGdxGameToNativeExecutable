@@ -13,7 +13,9 @@ inputs:
   caller-github-token:
     description: 'GitHub token'
     required: true
-
+  platform-specific-exec-file-extention:
+    description: 'Executable type (e.g. exe,msi,pkg,dmg,deb,rpm)'
+    required: true
 runs:
   using: "composite"
   steps:
@@ -31,7 +33,8 @@ runs:
       run: |
         java -version
 
-    - name: Build project
+    - name: Build project Linux
+      if: contains(fromJSON('["deb", "rpm"]'), inputs.platform-specific-exec-file-extention)
       shell: bash
       run: |
         echo "bringing scripts-----------------"
@@ -40,6 +43,17 @@ runs:
         ./pack_app_for_linux.sh
         echo "after trying to generate deb-----"
         ls
+
+    - name: Build project Windows
+      if: contains(fromJSON('["exe", "msi"]'), inputs.platform-specific-exec-file-extention)
+      shell: pwsh
+      run: |
+        echo "bringing scripts-----------------"
+        mv ${{ github.action_path }}/*.ps1 .
+        ./pack_app_for_windows.ps1 -Version "1.0.1" -ProjectName "Test" -Extention ${{ inputs.platform-specific-exec-file-extention }}
+        echo "after trying to generate exe and msi-----"
+        ls
+
     - name: Set Release Info
       id: set_release_info
       shell: bash
@@ -49,6 +63,8 @@ runs:
         echo "JAR_FILE=$(find . -name '*.jar' | head -n 1)" >> $GITHUB_OUTPUT
         echo "DEB_FILE=$(find . -name '*.deb' | head -n 1)"  >> $GITHUB_OUTPUT
         echo "RPM_FILE=$(find . -name '*.rpm' | head -n 1)"  >> $GITHUB_OUTPUT
+        echo "EXE_FILE=$(find . -name '*.exe' | head -n 1)"  >> $GITHUB_OUTPUT
+        echo "MSI_FILE=$(find . -name '*.msi' | head -n 1)"  >> $GITHUB_OUTPUT
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -58,6 +74,7 @@ runs:
         files: |
           ${{ steps.set_release_info.outputs.JAR_FILE }}
           ${{ steps.set_release_info.outputs.DEB_FILE }}
-          ${{ steps.set_release_info.outputs.RPM_FILE }}
+          ${{ steps.set_release_info.outputs.MSI_FILE }}
+          ${{ steps.set_release_info.outputs.EXE_FILE }}
         draft: false
         prerelease: false
