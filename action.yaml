@@ -13,9 +13,7 @@ inputs:
   caller-github-token:
     description: 'GitHub token'
     required: true
-  platform-specific-exec-file-extention:
-    description: 'Executable type (e.g. exe,msi,pkg,dmg,deb,rpm)'
-    required: true
+
 runs:
   using: "composite"
   steps:
@@ -42,16 +40,6 @@ runs:
         chmod +x *.sh
         ./pack_app_for_linux.sh
         echo "after trying to generate deb-----"
-        ls
-
-    - name: Build project Windows
-      if: contains(fromJSON('["exe", "msi"]'), inputs.platform-specific-exec-file-extention)
-      shell: pwsh
-      run: |
-        echo "bringing scripts-----------------"
-        mv ${{ github.action_path }}/*.ps1 .
-        ./pack_app_for_windows.ps1 -Version "1.0.1" -ProjectName "Test" -Extention ${{ inputs.platform-specific-exec-file-extention }}
-        echo "after trying to generate exe and msi-----"
         ls
 
     - name: Set Release Info
