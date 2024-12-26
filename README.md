@@ -22,5 +22,6 @@ jobs:
           java-version: 17
           version: 1.1.7
           caller-github-token: ${{ github.token }}
+          platform-specific-exec-file-extention: exe
 ```
 `distribution:` and `java-version:` are optional and default to `temurin` and `17`
